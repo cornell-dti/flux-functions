@@ -1,0 +1,45 @@
+{
+  "name": "campus-density-backend",
+  "description": "Backend for Campus Density.",
+  "version": "0.0.1",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "author": "Cornell Design & Tech Initiative",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cornell-dti/campus-density-backend"
+  },
+  "engines": {
+    "node": ">=8"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "lint": "repo-tools lint",
+    "pretest": "npm run lint",
+    "system-test": "repo-tools test app",
+    "test": "npm run system-test"
+  },
+  "dependencies": {
+    "@google-cloud/datastore": "2.0.0",
+    "@google-cloud/pubsub": "^0.20.1",
+    "body-parser": "^1.18.3",
+    "express": "4.16.4",
+    "moment": "^2.22.2",
+    "safe-buffer": "^5.1.2",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@google-cloud/nodejs-repo-tools": "2.3.5",
+    "eslint-config-airbnb": "^17.1.0",
+    "semistandard": "^12.0.1"
+  },
+  "cloud-repo-tools": {
+    "test": {
+      "app": {
+        "msg": "Last 10 visits:"
+      }
+    },
+    "requiresKeyFile": true,
+    "requiresProjectId": true
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+historical-storage/
+.env.*.yaml
+.openapi.yaml
+app.yaml
+cron.yaml
