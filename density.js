@@ -142,14 +142,6 @@ exports.facilityInfo = function (req, res) {
                         nextOpen = h['operatingHours'].find((e) => e.startTimestamp > date) || {};
                     }
 
-                    if (meta && meta.ios) {
-                        if (val !== -1) {
-                            val = -1;
-                        } else {
-                            val = 0;
-                        }
-                    }
-
                     res.status(200).send([{
                         id: h.id,
                         campusLocation: h['campusLocation'],
@@ -188,15 +180,7 @@ exports.facilityInfo = function (req, res) {
                     // TODO This is broken. Needs to find last opening, not first opening.
                     nextOpen = h['operatingHours'].find((e) => e.startTimestamp > date) || {};
                 }
-
-                if (meta && meta.ios) {
-                    if (val !== -1) {
-                        val = -1;
-                    } else {
-                        val = 0;
-                    }
-                }
-
+                
                 return ({
                     id: h.id,
                     campusLocation: h.campusLocation,
