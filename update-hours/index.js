@@ -20,7 +20,7 @@ const Datastore = require('@google-cloud/datastore');
 const datastore = Datastore();
 const Util = require('../util');
 
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 // TODO Don't hardcode
 const EATERYNAME_MAP = {
@@ -40,20 +40,13 @@ const EATERYNAME_MAP = {
 
 function insertData(data) {
     const eateries = (data['data'] || {})['eateries'] || {};
-    let times = {};
-
-    const currentDate = moment().format('YYYY-MM-DD');
-    let places = {};
+    const currentDate = moment().tz('America/New_York').format('YYYY-MM-DD');
 
     return Promise.all(eateries.map(eatery => new Promise((resolve, reject) => {
-        const strippedSlug = Util.strip(eatery.slug);
+        const times = [];
 
-        if (!times[strippedSlug]) {
-            times[strippedSlug] = [];
-        }
         const place = eatery['campusArea']['descrshort'].toLowerCase();
-
-        places[strippedSlug] = place;
+        const description = eatery['aboutshort'] || eatery['about'];
 
         const today = eatery['operatingHours'].find(e => e.date == currentDate);
 
@@ -62,7 +55,7 @@ function insertData(data) {
 
             if (evs)
                 for (const ev of Array.from(evs)) {
-                    times[strippedSlug].push({
+                    times.push({
                         startTimestamp: ev.startTimestamp,
                         endTimestamp: ev.endTimestamp
                     })
@@ -76,10 +69,11 @@ function insertData(data) {
             key: key,
             data: {
                 id: EATERYNAME_MAP[eatery.slug] || 'unknown',
-                campusLocation: places[strippedSlug],
+                campusLocation: place,
+                description: description,
                 nextOpen: -1,
                 nextClosing: -1,
-                operatingHours: times[strippedSlug]
+                operatingHours: times
             }
         },
             err => {
