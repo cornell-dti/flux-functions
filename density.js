@@ -120,6 +120,9 @@ exports.facilityInfo = function (req, res) {
 
         const date = Math.floor(Date.now() / 1000);
 
+        const paramArr = Array.from(arguments);
+        const meta = paramArr[paramArr.length - 1];
+
         if (req.query.id) {
             const id = req.query.id;
             if (id in ID_MAP) {
@@ -139,10 +142,19 @@ exports.facilityInfo = function (req, res) {
                         nextOpen = h['operatingHours'].find((e) => e.startTimestamp > date) || {};
                     }
 
+                    if (meta && meta.ios) {
+                        if (val !== -1) {
+                            val = -1;
+                        } else {
+                            val = 0;
+                        }
+                    }
+
                     res.status(200).send([{
                         id: h.id,
                         campusLocation: h['campusLocation'],
                         nextOpen: nextOpen.startTimestamp || -1,
+                        description: h['description'],
                         closingAt: val,
                         dailyHours: h['operatingHours']
                     }]);
@@ -177,10 +189,19 @@ exports.facilityInfo = function (req, res) {
                     nextOpen = h['operatingHours'].find((e) => e.startTimestamp > date) || {};
                 }
 
+                if (meta && meta.ios) {
+                    if (val !== -1) {
+                        val = -1;
+                    } else {
+                        val = 0;
+                    }
+                }
+
                 return ({
                     id: h.id,
                     campusLocation: h.campusLocation,
                     nextOpen: nextOpen.startTimestamp || -1,
+                    description: h['description'],
                     closingAt: val,
                     dailyHours: h.operatingHours
                 })

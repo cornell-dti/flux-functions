@@ -28,7 +28,7 @@ const Util = require('./util');
 exports.authenticated = function (route) {
     return (...params) => {
         const [req, res] = params;
-        
+
         if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
             res.status(403).send('Unauthorized');
             return;
@@ -48,7 +48,13 @@ exports.authenticated = function (route) {
                 }
 
                 if (Array.from(tokens).length == 1) {
-                    route(...params);
+                    if (tokens[0].ios) {
+                        route(...params, {
+                            ios: true
+                        });
+                        return;
+                    }
+                    route(...params, {});
                 } else {
                     res.status(403).send('Unauthorized');
                 }
@@ -65,6 +71,7 @@ exports.authenticated = function (route) {
 
 exports.handler = function (req, res) {
     if (!req.headers['x-api-key'] || !req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+        console.log('Malformed header for authv1: ' + req.headers['x-api-key']);
         res.status(403).send('Unauthorized');
         return;
     }
@@ -80,6 +87,16 @@ exports.handler = function (req, res) {
     const uuid = uuidv4();
     const token = Buffer.from(uuid).toString('base64');
 
+    const receipt = req.body.receipt;
+
+    let isIOS; // receipt && receipt !== ''
+
+    if (UUID_VALIDATE_IOS.test(vendorId)) {
+        isIOS = true;
+    } else {
+        isIOS = false;
+    }
+
     const densityKey = datastore.key({
         namespace: 'auth',
         path: ['auth_info', Util.strip(vendorId)]
@@ -90,6 +107,7 @@ exports.handler = function (req, res) {
             key: densityKey,
             data: {
                 instanceId: vendorId,
+                ios: isIOS,
                 uuid,
                 token,
                 generated: moment().valueOf()
