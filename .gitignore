@@ -4,3 +4,7 @@ historical-storage/
 .openapi.yaml
 app.yaml
 cron.yaml
+
+build/**
+conf/**
+.vscode/**
