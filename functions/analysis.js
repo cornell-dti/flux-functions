@@ -18,7 +18,7 @@
 const moment = require('moment');
 const Datastore = require('@google-cloud/datastore');
 
-const Util = require('../util');
+const Util = require('../src/util');
 
 const datastore = Datastore();
 

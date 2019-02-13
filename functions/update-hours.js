@@ -20,7 +20,7 @@ const Datastore = require('@google-cloud/datastore');
 
 const datastore = Datastore();
 const moment = require('moment-timezone');
-const Util = require('../util');
+const Util = require('../src/util');
 
 // TODO Don't hardcode
 const EATERYNAME_MAP = {

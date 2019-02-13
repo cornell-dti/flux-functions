@@ -19,7 +19,7 @@ const https = require('https');
 const Datastore = require('@google-cloud/datastore');
 const PubSub = require('@google-cloud/pubsub');
 const moment = require('moment');
-const Util = require('../util');
+const Util = require('../src/util');
 
 const datastore = Datastore();
 const pubsub = new PubSub();

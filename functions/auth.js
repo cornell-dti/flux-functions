@@ -24,7 +24,7 @@ const moment = require('moment');
 // TODO Validate iOS vendor ids
 const UUID_VALIDATE_IOS = /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/;
 
-const Util = require('./util');
+const Util = require('../src/util');
 
 exports.handler = function authv1(req, res) {
   if (!req.headers['x-api-key'] || !req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {

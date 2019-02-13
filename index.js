@@ -15,10 +15,10 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const DataStorage = require('./daily-storage');
-const Analysis = require('./analysis');
-const Auth = require('./auth');
-const UpdateHours = require('./update-hours');
+const DataStorage = require('./functions/daily-storage');
+const Analysis = require('./functions/analysis');
+const Auth = require('./functions/auth');
+const UpdateHours = require('./functions/update-hours');
 
 exports.updateData = DataStorage.handler;
 exports.analyse = Analysis.handler;
