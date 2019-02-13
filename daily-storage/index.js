@@ -18,22 +18,22 @@
 const https = require('https');
 const Datastore = require('@google-cloud/datastore');
 const PubSub = require('@google-cloud/pubsub');
+const moment = require('moment');
 const Util = require('../util');
+
 const datastore = Datastore();
 const pubsub = new PubSub();
-
-const moment = require('moment');
 
 const TOPIC = 'DATA_COUNTS_UPDATED';
 
 function insertData(data) {
   const dateString = data.TIMESTAMP;
   const units = data.UNITS;
-  console.log('Updating date for date time of ' + dateString.toString());
+  console.log(`Updating date for date time of ${dateString.toString()}`);
   // TODO Utilize timezoning/correct API source instead of raw offsets.
   // WARNING Will break on daylight savings changes!
   const dateObject = moment(`${dateString} -05:00`, 'YYYY-MM-DD hh:mm:ss A ZZ').utc();
-  console.log('Timezone adjusted date: ' + dateString.toString());
+  console.log(`Timezone adjusted date: ${dateString.toString()}`);
   const timestamp = dateObject.valueOf();
 
   return new Promise((resolve, reject) => {
@@ -47,13 +47,14 @@ function insertData(data) {
 
     const key = datastore.key(['counts', `${timestamp}`]);
 
-    datastore.upsert({
-      key: key,
-      data: {
-        key: key,
-        ...counts
-      }
-    },
+    datastore.upsert(
+      {
+        key,
+        data: {
+          key,
+          ...counts
+        }
+      },
       err => {
         if (err) reject(err);
         resolve();
@@ -64,12 +65,9 @@ function insertData(data) {
 
 exports.handler = function updateDensityData(fnData) {
   // defining the api-endpoint
-  const API_ENDPOINT = process.env.API_ENDPOINT;
-  const API_PATH = process.env.API_PATH;
-
-  // your API key here
-  const API_KEY = process.env.API_KEY;
-  const API_AUTHORIZATION = process.env.API_AUTHORIZATION;
+  const {
+    API_ENDPOINT, API_PATH, API_KEY, API_AUTHORIZATION
+  } = process.env;
 
   // data to be sent to api
   const data = {
@@ -81,15 +79,18 @@ exports.handler = function updateDensityData(fnData) {
     }
   };
 
-  return Util.getJSON(data, https).then(json => insertData(json)).then(() => {
-    const dataBuffer = Buffer.from('Data was updated.');
+  return Util.getJSON(data, https)
+    .then(json => insertData(json))
+    .then(() => {
+      const dataBuffer = Buffer.from('Data was updated.');
 
-    return pubsub
-      .topic(TOPIC)
-      .publisher()
-      .publish(dataBuffer);
-  }).then(messageId => {
-    console.log('messageId: ' + messageId);
-    return 'Message received: ' + messageId;
-  });
+      return pubsub
+        .topic(TOPIC)
+        .publisher()
+        .publish(dataBuffer);
+    })
+    .then(messageId => {
+      console.log(`messageId: ${messageId}`);
+      return `Message received: ${messageId}`;
+    });
 };

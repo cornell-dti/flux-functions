@@ -17,15 +17,9 @@
 
 const DataStorage = require('./daily-storage');
 const Analysis = require('./analysis');
-const Density = require('./density');
 const Auth = require('./auth');
 const UpdateHours = require('./update-hours');
-const HistoricalData = require('./history');
 
-exports.howDense = Auth.authenticated(Density.howDense);
-exports.facilityList = Auth.authenticated(Density.facilityList);
-exports.facilityInfo = Auth.authenticated(Density.facilityInfo);
-exports.historicalData = Auth.authenticated(HistoricalData.handler);
 exports.updateData = DataStorage.handler;
 exports.analyse = Analysis.handler;
 exports.updateHours = UpdateHours.handler;

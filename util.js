@@ -15,37 +15,36 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-exports.strip = function (str) {
-    return str.replace(/\W/g, '');
-}
+exports.strip = function strip(str) {
+  return str.replace(/\W/g, '');
+};
 
 let httpsLib = null;
 
 function getHTTPSLib() {
-    if (httpsLib == null) {
-        httpsLib = require('https');
-    }
+  if (httpsLib == null) {
+    httpsLib = require('https');
+  }
 
-    return httpsLib;
+  return httpsLib;
 }
 
-exports.getJSON = function (data, httpsLib = getHTTPSLib()) {
-    return new Promise((resolve, reject) => {
-        const request = httpsLib
-            .get(data, result => {
-                let body = '';
+exports.getJSON = function getJSON(data, https = getHTTPSLib()) {
+  return new Promise((resolve, reject) => {
+    const request = https.get(data, result => {
+      let body = '';
 
-                result.on('data', chunk => {
-                    body += chunk;
-                });
+      result.on('data', chunk => {
+        body += chunk;
+      });
 
-                result.on('end', () => {
-                    const jsdata = JSON.parse(body);
-                    resolve(jsdata);
-                });
-            });
-        request.on('error', e => {
-            reject(e);
-        });
+      result.on('end', () => {
+        const jsdata = JSON.parse(body);
+        resolve(jsdata);
+      });
     });
-}
+    request.on('error', e => {
+      reject(e);
+    });
+  });
+};

@@ -16,6 +16,7 @@
  */
 
 const Datastore = require('@google-cloud/datastore');
+
 const datastore = Datastore();
 const uuidv4 = require('uuid/v4');
 const moment = require('moment');
@@ -25,103 +26,62 @@ const UUID_VALIDATE_IOS = /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A
 
 const Util = require('./util');
 
-exports.authenticated = function (route) {
-    return (...params) => {
-        const [req, res] = params;
+exports.handler = function authv1(req, res) {
+  if (!req.headers['x-api-key'] || !req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+    console.log(`Malformed header for authv1: ${req.headers['x-api-key']}`);
+    res.status(403).send('Unauthorized');
+    return;
+  }
 
-        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-            res.status(403).send('Unauthorized');
-            return;
+  if (req.method !== 'PUT') {
+    res.status(400).send('Only serves over PUT');
+    return;
+  }
+
+  const idToken = req.headers.authorization.split('Bearer ')[1];
+  const vendorId = req.headers['x-api-key'];
+  const apiKey = process.env.AUTH_KEY;
+  const uuid = uuidv4();
+  const token = Buffer.from(uuid).toString('base64');
+
+  const { receipt } = req.body;
+
+  let isIOS; // receipt && receipt !== ''
+
+  if (UUID_VALIDATE_IOS.test(vendorId)) {
+    isIOS = true;
+  } else {
+    isIOS = false;
+  }
+
+  const densityKey = datastore.key({
+    namespace: 'auth',
+    path: ['auth_info', Util.strip(vendorId)]
+  });
+
+  if (idToken === apiKey) {
+    datastore.upsert(
+      {
+        key: densityKey,
+        data: {
+          instanceId: vendorId,
+          ios: isIOS,
+          uuid,
+          token,
+          generated: moment().valueOf()
         }
-
-        const idToken = req.headers.authorization.split('Bearer ')[1];
-        const apiKey = process.env.AUTH_KEY;
-
-        if (idToken === apiKey) {
-            const token = req.headers['x-api-key'];
-            const query = datastore.createQuery('auth', 'auth_info').filter('token', '=', token);
-
-            datastore.runQuery(query, (err, tokens) => {
-                if (err) {
-                    res.status(500).send('Failed to access token tables');
-                    return;
-                }
-
-                if (Array.from(tokens).length == 1) {
-                    if (tokens[0].ios) {
-                        route(...params, {
-                            ios: true
-                        });
-                        return;
-                    }
-                    route(...params, {});
-                } else {
-                    res.status(403).send('Unauthorized');
-                }
-            });
-
-            // TODO Add receipt/instanceId authentication
-            //const receipt = req.body.receipt;
-            //const instanceId = req.body.instanceId;
+      },
+      err => {
+        if (err) {
+          res.status(500).send(err);
         } else {
-            res.status(403).send('Unauthorized');
+          res.status(201).send({
+            token
+          });
         }
-    };
-}
-
-exports.handler = function (req, res) {
-    if (!req.headers['x-api-key'] || !req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-        console.log('Malformed header for authv1: ' + req.headers['x-api-key']);
-        res.status(403).send('Unauthorized');
-        return;
-    }
-
-    if (req.method !== 'PUT') {
-        res.status(400).send('Only serves over PUT');
-        return;
-    }
-
-    const idToken = req.headers.authorization.split('Bearer ')[1];
-    const vendorId = req.headers['x-api-key'];
-    const apiKey = process.env.AUTH_KEY;
-    const uuid = uuidv4();
-    const token = Buffer.from(uuid).toString('base64');
-
-    const receipt = req.body.receipt;
-
-    let isIOS; // receipt && receipt !== ''
-
-    if (UUID_VALIDATE_IOS.test(vendorId)) {
-        isIOS = true;
-    } else {
-        isIOS = false;
-    }
-
-    const densityKey = datastore.key({
-        namespace: 'auth',
-        path: ['auth_info', Util.strip(vendorId)]
-    });
-
-    if (idToken === apiKey) {
-        datastore.upsert({
-            key: densityKey,
-            data: {
-                instanceId: vendorId,
-                ios: isIOS,
-                uuid,
-                token,
-                generated: moment().valueOf()
-            }
-        }, err => {
-            if (err) {
-                res.status(500).send(err);
-            } else {
-                res.status(201).send({
-                    token
-                });
-            }
-        });
-    } else {
-        res.status(401).send('Unable to authenticate api key.');
-    }
-}
+      }
+    );
+  } else {
+    res.status(401).send('Unable to authenticate api key.');
+  }
+};

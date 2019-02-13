@@ -17,83 +17,89 @@
 
 const https = require('https');
 const Datastore = require('@google-cloud/datastore');
-const datastore = Datastore();
-const Util = require('../util');
 
+const datastore = Datastore();
 const moment = require('moment-timezone');
+const Util = require('../util');
 
 // TODO Don't hardcode
 const EATERYNAME_MAP = {
-    'Cook-House-Dining': 'cook',
-    'Cafe-Jennie': 'cafejennie',
-    'Becker-House-Dining': 'becker',
-    'Jansens-Dining': 'bethe',
-    'Keeton-House-Dining': 'keeton',
-    '104-West': 'west104',
-    'North-Star': 'appel',
-    'Okenshields': 'okies',
-    'Amit-Bhatia-Libe-Cafe': 'libe',
-    'RPCC-Marketplace': 'rpcc',
-    'Risley-Dining': 'risley',
-    'Rose-House-Dining': 'rose'
-}
+  'Cook-House-Dining': 'cook',
+  'Cafe-Jennie': 'cafejennie',
+  'Becker-House-Dining': 'becker',
+  'Jansens-Dining': 'bethe',
+  'Keeton-House-Dining': 'keeton',
+  '104-West': 'west104',
+  'North-Star': 'appel',
+  Okenshields: 'okies',
+  'Amit-Bhatia-Libe-Cafe': 'libe',
+  'RPCC-Marketplace': 'rpcc',
+  'Risley-Dining': 'risley',
+  'Rose-House-Dining': 'rose'
+};
 
 function insertData(data) {
-    const eateries = (data['data'] || {})['eateries'] || {};
-    const currentDate = moment().tz('America/New_York').format('YYYY-MM-DD');
+  const eateries = (data.data || {}).eateries || {};
+  const currentDate = moment()
+    .tz('America/New_York')
+    .format('YYYY-MM-DD');
 
-    return Promise.all(eateries.map(eatery => new Promise((resolve, reject) => {
+  return Promise.all(
+    eateries.map(
+      eatery => new Promise((resolve, reject) => {
         const times = [];
 
-        const place = eatery['campusArea']['descrshort'].toLowerCase();
-        const description = eatery['aboutshort'] || eatery['about'];
+        const place = eatery.campusArea.descrshort.toLowerCase();
+        const description = eatery.aboutshort || eatery.about;
 
-        const today = eatery['operatingHours'].find(e => e.date == currentDate);
+        const today = eatery.operatingHours.find(e => e.date === currentDate);
 
         if (today) {
-            let evs = today['events'];
+          const evs = today.events;
 
-            if (evs)
-                for (const ev of Array.from(evs)) {
-                    times.push({
-                        startTimestamp: ev.startTimestamp,
-                        endTimestamp: ev.endTimestamp
-                    })
-                }
+          if (evs) {
+            for (const ev of Array.from(evs)) {
+              times.push({
+                startTimestamp: ev.startTimestamp,
+                endTimestamp: ev.endTimestamp
+              });
+            }
+          }
         }
-
 
         const key = datastore.key(['hours', `${eatery.slug}`]);
 
-        datastore.upsert({
-            key: key,
+        datastore.upsert(
+          {
+            key,
             data: {
-                id: EATERYNAME_MAP[eatery.slug] || 'unknown',
-                campusLocation: place,
-                description: description,
-                nextOpen: -1,
-                nextClosing: -1,
-                operatingHours: times
+              id: EATERYNAME_MAP[eatery.slug] || 'unknown',
+              campusLocation: place,
+              description,
+              nextOpen: -1,
+              nextClosing: -1,
+              operatingHours: times
             }
-        },
-            err => {
-                if (err) reject(err);
-                resolve();
-            }
+          },
+          err => {
+            if (err) reject(err);
+            resolve();
+          }
         );
-    })));
+      })
+    )
+  );
 }
 
 exports.handler = function updateHours(fnData) {
-    const API_ENDPOINT = process.env.API_ENDPOINT;
-    const API_PATH = process.env.API_PATH;
+  const { API_ENDPOINT, API_PATH } = process.env;
 
-    const data = {
-        hostname: API_ENDPOINT,
-        path: API_PATH
-    };
+  const data = {
+    hostname: API_ENDPOINT,
+    path: API_PATH
+  };
 
-    return Util.getJSON(data, https).then(json => insertData(json)).then(() => {
-        return 'Success';
-    });
+  return Util.getJSON(data, https)
+    .then(json => insertData(json))
+    .then(() => 'Success');
 };
