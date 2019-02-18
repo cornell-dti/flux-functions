@@ -40,52 +40,73 @@ const EATERYNAME_MAP = {
 
 function insertData(data) {
   const eateries = (data.data || {}).eateries || {};
-  const currentDate = moment()
-    .tz('America/New_York')
-    .format('YYYY-MM-DD');
-
+  let weekMoment = []; 
+  let day = moment()
+    .tz('America/New_York'); 
+  // we want to store from day before until 6 days in the future 
+  // guarantee we can get data within one week range 
+  // moment('1998-12-22', 'YYYY-MM-DD').tz('America/New_York').unix()
+  day = day.clone().subtract(1, 'd'); 
+  for (let i = 0; i < 7; i++) {
+    weekMoment.push(day); 
+    day = day.clone().add(1, 'd');
+  }
+  let week = []
+  for (let i = 0; i < 7; i++) {
+    week.push([weekMoment[i], weekMoment[i].format('YYYY-MM-DD')]);
+  }
+  console.log("Weeks: ")
+  console.log(week);
+  console.log(); 
   return Promise.all(
     eateries.map(
       eatery => new Promise((resolve, reject) => {
         const times = [];
-
+      
         const place = eatery.campusArea.descrshort.toLowerCase();
         const description = eatery.aboutshort || eatery.about;
+        for (const [moment, currentDate] of week) {
+          const today = eatery.operatingHours.find(e => e.date === currentDate);
+          if (today) {
+            const evs = today.events;
 
-        const today = eatery.operatingHours.find(e => e.date === currentDate);
-
-        if (today) {
-          const evs = today.events;
-
-          if (evs) {
-            for (const ev of Array.from(evs)) {
-              times.push({
-                startTimestamp: ev.startTimestamp,
-                endTimestamp: ev.endTimestamp
-              });
+            if (evs) {
+              for (const ev of Array.from(evs)) {
+                times.push({
+                  date: currentDate, 
+                  dayOfWeek: moment.day(), 
+                  status: "open", 
+                  statusText: "open",
+                  dailyHours: {
+                  startTimestamp: ev.startTimestamp,
+                  endTimestamp: ev.endTimestamp
+                }});
+              }
             }
           }
         }
-
-        const key = datastore.key(['hours', `${eatery.slug}`]);
-
-        datastore.upsert(
-          {
-            key,
-            data: {
+        const key = datastore.key(['development-testing-hours', `${eatery.slug}`]);
+        if (EATERYNAME_MAP[eatery.slug] != null) {
+          console.log({data: 
+            {
               id: EATERYNAME_MAP[eatery.slug] || 'unknown',
-              campusLocation: place,
-              description,
-              nextOpen: -1,
-              nextClosing: -1,
-              operatingHours: times
+              hours: times
             }
-          },
-          err => {
-            if (err) reject(err);
-            resolve();
-          }
-        );
+          })
+          datastore.upsert(
+            {
+              key,
+              data: {
+                id: EATERYNAME_MAP[eatery.slug] || 'unknown',
+                hours: times
+              }
+            },
+            err => {
+              if (err) reject(err);
+              resolve();
+            }
+          );
+        }
       })
     )
   );

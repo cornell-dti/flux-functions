@@ -22,5 +22,5 @@ const UpdateHours = require('./functions/update-hours');
 
 exports.updateData = DataStorage.handler;
 exports.analyse = Analysis.handler;
-exports.updateHours = UpdateHours.handler;
+exports.updateHoursDev = UpdateHours.handler;
 exports.authv1 = Auth.handler;
