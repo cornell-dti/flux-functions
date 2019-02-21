@@ -85,7 +85,7 @@ function insertData(data) {
             }
           }
         }
-        const key = datastore.key(['facility-hours', `${eatery.slug}`]);
+        const key = datastore.key(['development-testing-hours', `${eatery.slug}`]);
         if (EATERYNAME_MAP[eatery.slug] != null) {
           console.log({data: 
             {
