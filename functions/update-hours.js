@@ -47,12 +47,12 @@ function insertData(data) {
   // guarantee we can get data within one week range 
   // moment('1998-12-22', 'YYYY-MM-DD').tz('America/New_York').unix()
   day = day.clone().subtract(1, 'd'); 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i <= 7; i++) {
     weekMoment.push(day); 
     day = day.clone().add(1, 'd');
   }
   let week = []
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i <= 7; i++) {
     week.push([weekMoment[i], weekMoment[i].format('YYYY-MM-DD')]);
   }
   console.log("Weeks: ")
