@@ -13,7 +13,6 @@
     "node": ">=8"
   },
   "scripts": {
-    "start": "node app.js",
     "lint": "eslint .",
     "test": "yarn lint"
   },
