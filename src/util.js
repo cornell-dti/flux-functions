@@ -23,6 +23,7 @@ let httpsLib = null;
 
 function getHTTPSLib() {
   if (httpsLib == null) {
+    // eslint-disable-next-line global-require
     httpsLib = require('https');
   }
 
