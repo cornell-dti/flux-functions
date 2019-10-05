@@ -10,6 +10,8 @@ module.exports = {
   },
   extends: ['airbnb-base'],
   rules: {
+    'no-unused-vars': 'warn',
+    'no-shadow': 'warn',
     // disallow reassignment of function parameters
     // disallow parameter object manipulation except for specific exclusions
     'no-param-reassign': [

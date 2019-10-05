@@ -1,5 +1,4 @@
-Flux Functions
-======================
+# Flux Functions
 
 ## Description
 

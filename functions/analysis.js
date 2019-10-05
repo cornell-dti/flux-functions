@@ -15,6 +15,8 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* eslint-disable camelcase */
+
 const moment = require('moment');
 const Datastore = require('@google-cloud/datastore');
 
