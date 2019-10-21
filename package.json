@@ -21,6 +21,8 @@
     "@google-cloud/pubsub": "^0.20.1",
     "body-parser": "^1.18.3",
     "express": "4.16.4",
+    "firebase-admin": "^8.6.1",
+    "firebase-functions": "^3.3.0",
     "moment": "^2.22.2",
     "moment-timezone": "^0.5.23",
     "safe-buffer": "^5.1.2",

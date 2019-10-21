@@ -55,16 +55,10 @@ function insertData(data) {
   for (let i = 0; i <= 7; i += 1) {
     week.push([weekMoment[i], weekMoment[i].format('YYYY-MM-DD')]);
   }
-  console.log('Weeks: ');
-  console.log(week);
-  console.log();
   return Promise.all(
     eateries.map(
       eatery => new Promise((resolve, reject) => {
         const times = [];
-
-        const place = eatery.campusArea.descrshort.toLowerCase();
-        const description = eatery.aboutshort || eatery.about;
         for (const [moment, currentDate] of week) {
           const today = eatery.operatingHours.find(e => e.date === currentDate);
           if (today) {
@@ -87,14 +81,7 @@ function insertData(data) {
           }
         }
         const key = datastore.key(['development-testing-hours', `${eatery.slug}`]);
-        if (EATERYNAME_MAP[eatery.slug] != null) {
-          console.log({
-            data:
-            {
-              id: EATERYNAME_MAP[eatery.slug] || 'unknown',
-              hours: times
-            }
-          });
+        if (EATERYNAME_MAP[eatery.slug] !== null) {
           datastore.upsert(
             {
               key,
