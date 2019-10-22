@@ -64,7 +64,7 @@ async function getAllMenus() {
   }
   catch (err) {
     console.error(err);
-    return "error";
+    return false;
   }
 }
 
@@ -78,30 +78,88 @@ async function getEateryMenus(slug) {
 }
 
 // [time] is unix epoch time in seconds
-async function getEateryMenu(slug, time) {
+async function getEateryUpcomingMenu(slug, time) {
+  let mealStartTime = 0;
   let menu = {};
   await getEateryMenus(slug)
     .then(eateryMenus => {
       for (const meal of eateryMenus) {
-        const endTime = meal.endTime;
-        if (time < endTime) {
-          menu = meal.menu;
+        if (time < meal.endTime) {
+          menu[meal.description] = meal.menu;
+          mealStartTime = meal.startTime;
           break;
-        }
+        };
       };
     });
-  return menu;
+  return {
+    date: new Date(mealStartTime * 1000),
+    content: menu
+  };
+}
+
+// [time] is unix epoch time in seconds
+async function getEateryDayMenus(slug, time) {
+  const date = new Date(time * 1000);
+  let menus = {};
+  await getEateryMenus(slug)
+    .then(eateryMenus => {
+      let lastMealEndTime = 0;
+      for (const meal of eateryMenus) {
+        const mealDay = new Date(meal.startTime * 1000).getDay();
+        if (date.getDay() === mealDay) {
+          menus[meal.description] = meal.menu;
+          lastMealEndTime = meal.endTime;
+        };
+      };
+      if (time > lastMealEndTime) {
+        let tomorrow = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+        const tomorrowTime = Math.floor(tomorrow.getTime() / 1000);
+        menus = getEateryDayMenus(slug, tomorrowTime).menus;
+      };
+    });
+  if (menus.length === 0) {
+    getEateryUpcomingMenu(slug, time);
+  } else return {
+    date: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+    menus: menus
+  };
 }
 
 // [time] is unix epoch time in seconds
 async function getAllMealItems(slug, time) {
   let items = [];
-  await getEateryMenu(slug, time)
+  await getEateryUpcomingMenu(slug, time)
     .then(menu => {
-      for (const section of menu)
-        items.push(section.items)
+      const content = menu.content;
+      for (const description of Object.keys(content)) {
+        const menu = content[description];
+        for (const section of menu) {
+          for (const item of section.items) {
+            items.push(item);
+          };
+        };
+      };
     });
-  return [].concat.apply([], items);
+  return items;
+}
+
+async function getAllItems() {
+  let items = new Set([]);
+  await getAllMenus()
+    .then(allMenus => {
+      for (const slug of Object.keys(allMenus)) {
+        const eatery = allMenus[slug];
+        const eateryMenus = eatery.weeksMenus;
+        for (const meal of eateryMenus) {
+          for (const section of meal.menu) {
+            for (const item of section.items) {
+              items.add(item);
+            }
+          };
+        };
+      };
+    });
+  return items
 }
 
 async function test() {
@@ -109,22 +167,32 @@ async function test() {
   function hr(desc) {
     console.log("\n-----------------------------------\n" + desc + "\n");
   }
-  await getEateryMenus('StraightMarket')
+  await getEateryMenus('Becker-House-Dining')
     .then(menus => {
       hr("getAllMenus");
-      console.log(allMenus);
+      // console.log(allMenus);
       hr("getEateryMenus");
-      console.log(menus);
+      // console.log(menus);
     })
-  await getEateryMenu('Becker-House-Dining', now)
+  await getEateryUpcomingMenu('Becker-House-Dining', now)
     .then(menu => {
-      hr("getEateryMenu");
-      console.log(menu);
+      hr("getEateryUpcomingMenu");
+      // console.log(menu);
+    })
+  await getEateryDayMenus('Becker-House-Dining', now)
+    .then(menus => {
+      hr("getEateryDayMenus");
+      console.log(menus);
     })
   await getAllMealItems('Becker-House-Dining', now)
     .then(items => {
       hr("getAllMealItems");
-      console.log(items);
+      // console.log(items);
+    })
+  await getAllItems()
+    .then(items => {
+      hr("getAllItems");
+      // console.log(items);
     })
 }
 test();
