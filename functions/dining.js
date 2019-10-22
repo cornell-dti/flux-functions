@@ -17,17 +17,17 @@
 
 /* eslint-disable camelcase */
 
-const fetch = require('node-fetch')
+const fetch = require('node-fetch');
 
-let menus = {};
+const menus = {};
 setMenus = (json) => {
-  let eateries = json['data']['eateries'];
+  const eateries = json.data.eateries;
 
   for (const eatery of eateries) {
-    let weeksMenus = [];
+    const weeksMenus = [];
     for (const openDay of eatery.operatingHours) {
       for (const openTime of openDay.events) {
-        menuData = openTime.menu;
+        const menuData = openTime.menu;
         menu = []
         for (const menuSection of menuData) {
           menu.push({
