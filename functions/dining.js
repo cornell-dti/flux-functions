@@ -28,29 +28,29 @@ setMenus = (json) => {
     for (const openDay of eatery.operatingHours) {
       for (const openTime of openDay.events) {
         const menuData = openTime.menu;
-        menu = [];
+        let menu = [];
         for (const menuSection of menuData) {
           menu.push({
             category: menuSection.category,
             items: menuSection.items.map((items) => items.item)
-          })
-        }
+          });
+        };
         if (menu.length !== 0) {
           weeksMenus.push({
             description: openTime.descr,
             startTime: openTime.startTimestamp,
             endTime: openTime.endTimestamp,
-            menu: menu
-          })
-        }
-      };
+            menu
+          });
+        };
+      }
     }
     if (weeksMenus.length !== 0) {
       allMenus[eatery.slug] = {
         name: eatery.name,
-        weeksMenus: weeksMenus
+        weeksMenus
       };
-    }
+    };
   }
 }
 
@@ -121,7 +121,7 @@ async function getEateryDayMenus(slug, time) {
     getEateryUpcomingMenu(slug, time);
   } else return {
     date: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-    menus: menus
+    menus
   };
 }
 
