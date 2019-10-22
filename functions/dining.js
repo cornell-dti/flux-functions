@@ -170,14 +170,14 @@ async function test() {
   await getEateryMenus('Becker-House-Dining')
     .then(menus => {
       hr("getAllMenus");
-      // console.log(allMenus);
+      console.log(allMenus);
       hr("getEateryMenus");
-      // console.log(menus);
+      console.log(menus);
     })
   await getEateryUpcomingMenu('Becker-House-Dining', now)
     .then(menu => {
       hr("getEateryUpcomingMenu");
-      // console.log(menu);
+      console.log(menu);
     })
   await getEateryDayMenus('Becker-House-Dining', now)
     .then(menus => {
@@ -187,15 +187,15 @@ async function test() {
   await getAllMealItems('Becker-House-Dining', now)
     .then(items => {
       hr("getAllMealItems");
-      // console.log(items);
+      console.log(items);
     })
   await getAllItems()
     .then(items => {
       hr("getAllItems");
-      // console.log(items);
+      console.log(items);
     })
 }
-test();
+// test();
 
 exports.handler = function menus(event, callback) {
   return getMenus();
