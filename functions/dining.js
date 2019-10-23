@@ -21,7 +21,7 @@ const fetch = require('node-fetch');
 
 const allMenus = {};
 function setMenus(json) {
-  const eateries = json.data.eateries;
+  const { eateries } = json.data;
 
   for (const eatery of eateries) {
     const weeksMenus = [];
@@ -52,7 +52,7 @@ function setMenus(json) {
       };
     }
   }
-};
+}
 
 async function getAllMenus() {
   console.log('Fetching dining data');
@@ -113,7 +113,7 @@ async function getEateryDayMenus(slug, time) {
       if (time > lastMealEndTime) {
         const tomorrow = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
         const tomorrowTime = Math.floor(tomorrow.getTime() / 1000);
-        () => { menu = getEateryDayMenus(slug, tomorrowTime).menus };
+        menus = getEateryDayMenus(slug, tomorrowTime).menus;
       }
     });
   return {
@@ -127,21 +127,21 @@ async function getAllMealItems(slug, time) {
   const items = [];
   await getEateryUpcomingMenu(slug, time)
     .then(menu => {
-      const content = menu.content;
+      const { content } = menu;
       for (const description of Object.keys(content)) {
         const menu = content[description];
         for (const section of menu) {
           for (const item of section.items) {
             items.push(item);
-          };
-        };
-      };
+          }
+        }
+      }
     });
   return items;
 }
 
 async function getAllItems() {
-  let items = new Set([]);
+  const items = new Set([]);
   await getAllMenus()
     .then(allMenus => {
       for (const slug of Object.keys(allMenus)) {
@@ -162,7 +162,9 @@ async function getAllItems() {
 async function test() {
   const now = Math.floor(Date.now() / 1000);
   function hr(desc) {
-    console.log('\n-----------------------------------\n' + desc + '\n');
+    console.log('\n-----------------------------------');
+    console.log(desc);
+    console.log('\n');
   }
   await getEateryMenus('Becker-House-Dining')
     .then(menus => {
@@ -170,26 +172,26 @@ async function test() {
       console.log(allMenus);
       hr('getEateryMenus');
       console.log(menus);
-    })
+    });
   await getEateryUpcomingMenu('Becker-House-Dining', now)
     .then(menu => {
       hr('getEateryUpcomingMenu');
       console.log(menu);
-    })
+    });
   await getEateryDayMenus('Becker-House-Dining', now)
     .then(menus => {
       hr('getEateryDayMenus');
       console.log(menus);
-    })
+    });
   await getAllMealItems('Becker-House-Dining', now)
     .then(items => {
       hr('getAllMealItems');
       console.log(items);
-    })
+    });
   await getAllItems()
     .then(items => {
       hr('getAllItems');
       console.log(items);
-    })
-};
-// test();
+    });
+}
+test();
