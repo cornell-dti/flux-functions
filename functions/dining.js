@@ -48,6 +48,8 @@ function setMenus(json) {
     if (weeksMenus.length !== 0) {
       allMenus[eatery.slug] = {
         name: eatery.name,
+        campusArea: eatery.campusArea.descrshort,
+        coordinates: eatery.coordinates,
         weeksMenus
       };
     }
@@ -194,4 +196,4 @@ async function test() {
       console.log(items);
     });
 }
-test();
+// test();
