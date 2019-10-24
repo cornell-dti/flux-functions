@@ -19,8 +19,10 @@ const DataStorage = require('./functions/daily-storage');
 const Analysis = require('./functions/analysis');
 const Auth = require('./functions/auth');
 const UpdateHours = require('./functions/update-hours');
+const DiningData = require('./functions/dining');
 
 exports.updateData = DataStorage.handler;
 exports.analyse = Analysis.handler;
-exports.updateHoursDev = UpdateHours.handler;
 exports.authv1 = Auth.handler;
+exports.updateHoursDev = UpdateHours.handler;
+exports.diningData = DiningData.handler;
