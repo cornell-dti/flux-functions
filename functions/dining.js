@@ -62,10 +62,12 @@ function insertData(data) {
               });
             }
           }
-          weeksMenus.push({
-            day: "Sunday",
-            menus: dayMenus
-          });
+          if (dayMenus.length !== 0) {
+            weeksMenus.push({
+              date: openDay.date,
+              menus: dayMenus
+            });
+          }
         }
         const key = datastore.key(['dining', `${eatery.slug}`]);
         if (EATERYNAME_MAP[eatery.slug] !== null) {
