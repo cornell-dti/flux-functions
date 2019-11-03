@@ -43,6 +43,7 @@ function insertData(data) {
       eatery => new Promise((resolve, reject) => {
         const weeksMenus = [];
         for (const openDay of eatery.operatingHours) {
+          const dayMenus = [];
           for (const openTime of openDay.events) {
             const menuData = openTime.menu;
             const menu = [];
@@ -53,13 +54,19 @@ function insertData(data) {
               });
             }
             if (menu.length !== 0) {
-              weeksMenus.push({
+              dayMenus.push({
                 description: openTime.descr,
                 startTime: openTime.startTimestamp,
                 endTime: openTime.endTimestamp,
                 menu
               });
             }
+          }
+          if (dayMenus.length !== 0) {
+            weeksMenus.push({
+              date: openDay.date,
+              menus: dayMenus
+            });
           }
         }
         const key = datastore.key(['dining', `${eatery.slug}`]);
