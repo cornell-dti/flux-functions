@@ -53,7 +53,6 @@ function insertData(data) {
             }))
           }))
         }));
-        if (eatery.slug === "Becker-House-Dining") console.log(weeksMenus);
         const key = datastore.key(['dining', `${eatery.slug}`]);
         if (EATERYNAME_MAP[eatery.slug] !== null) {
           datastore.upsert(
