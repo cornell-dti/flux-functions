@@ -41,34 +41,19 @@ function insertData(data) {
   return Promise.all(
     eateries.map(
       eatery => new Promise((resolve, reject) => {
-        const weeksMenus = [];
-        for (const openDay of eatery.operatingHours) {
-          const dayMenus = [];
-          for (const openTime of openDay.events) {
-            const menuData = openTime.menu;
-            const menu = [];
-            for (const menuSection of menuData) {
-              menu.push({
-                category: menuSection.category,
-                items: menuSection.items.map(items => items.item)
-              });
-            }
-            if (menu.length !== 0) {
-              dayMenus.push({
-                description: openTime.descr,
-                startTime: openTime.startTimestamp,
-                endTime: openTime.endTimestamp,
-                menu
-              });
-            }
-          }
-          if (dayMenus.length !== 0) {
-            weeksMenus.push({
-              date: openDay.date,
-              menus: dayMenus
-            });
-          }
-        }
+        const weeksMenus = eatery.operatingHours.map(day => ({
+          date: day.date,
+          menus: day.events.map(event => ({
+            startTime: event.startTimestamp,
+            endTime: event.endTimestamp,
+            description: event.descr,
+            menu: event.menu.map(m => ({
+              category: m.category,
+              items: m.items.map(innerItem => innerItem.item)
+            }))
+          }))
+        }));
+        if (eatery.slug === "Becker-House-Dining") console.log(weeksMenus);
         const key = datastore.key(['dining', `${eatery.slug}`]);
         if (EATERYNAME_MAP[eatery.slug] !== null) {
           datastore.upsert(
