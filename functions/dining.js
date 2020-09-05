@@ -56,8 +56,8 @@ function insertData(data) {
         const location = {
           address: eatery.location,
           area: eatery.campusArea.descrshort,
-          coordinates: eatery.coordinates,
-        }
+          coordinates: eatery.coordinates
+        };
         const key = datastore.key(['dining', `${eatery.slug}`]);
         if (EATERYNAME_MAP[eatery.slug] !== null) {
           datastore.upsert(
