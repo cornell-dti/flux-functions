@@ -73,7 +73,8 @@ function insertData(data) {
                   statusText: 'open',
                   dailyHours: {
                     startTimestamp: ev.startTimestamp,
-                    endTimestamp: ev.endTimestamp
+                    endTimestamp: ev.endTimestamp,
+                    description: ev.desc
                   }
                 });
               }
