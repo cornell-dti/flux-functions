@@ -100,7 +100,6 @@ function analyseData() {
           counts.forEach((count) => {
             mapping[`${count.timestamp}`] = count;
           });
-          console.log(mapping);
           resolve([entities, mapping]);
         }
       });
