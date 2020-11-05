@@ -40,7 +40,6 @@ exports.getJSON = function getJSON(data, https = getHTTPSLib()) {
       });
 
       result.on("end", () => {
-        console.log(body);
         const jsdata = JSON.parse(body);
         resolve(jsdata);
       });

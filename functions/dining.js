@@ -15,7 +15,6 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-require("dotenv").config({ path: "../.env" });
 const https = require("https");
 const Datastore = require("@google-cloud/datastore");
 
@@ -57,7 +56,6 @@ function processCafes(objArray) {
 }
 
 function insertData(data) {
-  console.log(data);
   const eateries = (data.data || {}).eateries || {};
   return Promise.all(
     eateries.map(
