@@ -89,6 +89,18 @@ async function computeNewWaitline(diningHall, day, currMeal) {
   const ewt = servingTimeForOnePerson * newWaitlineLength;
   console.log("The new waitline: " + newWaitlineLength);
   console.log("The estimated wait time is: " + ewt);
+
+  // update the estimated waittime field on firebase
+  await db
+    .collection("waittimes")
+    .doc("waittimes")
+    .update({ [diningHall]: ewt });
+
+  // update the waitline length field
+  await db
+    .collection("waittimes")
+    .doc("lineLengths")
+    .update({ [diningHall]: newWaitlineLength });
 }
 
-computeNewWaitline("RPME", "monday", "lunch");
+computeNewWaitline("Cook-House-Dining", "monday", "lunch");
