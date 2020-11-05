@@ -74,12 +74,9 @@ async function computeNewWaitline(diningHall, day, currMeal) {
   console.log(`Serving time for one person: ${servingTimeForOnePerson}`);
   console.log(`Service rate: ${serviceRate}`);
 
-  const swipeDataForEatery = (
-    swipeData.UNITS.find((element) => element.UNIT_NAME === diningHall) || {}
-  ).CROWD_COUNT;
-
-  if (!swipeDataForEatery)
-    throw new Error("Could not fetch swipe data for this dining hall");
+  const swipeDataForEatery =
+    (swipeData.UNITS.find((element) => element.UNIT_NAME === diningHall) || {})
+      .CROWD_COUNT || 0;
 
   console.log(`swipeDataForEatery: ${swipeDataForEatery}`);
   const newWaitlineLength = Math.max(
@@ -103,4 +100,4 @@ async function computeNewWaitline(diningHall, day, currMeal) {
     .update({ [diningHall]: newWaitlineLength });
 }
 
-computeNewWaitline("Cook-House-Dining", "monday", "lunch");
+computeNewWaitline("Carl Becker House", "monday", "lunch");
