@@ -31,7 +31,6 @@ require("dotenv").config({ path: "../.env" });
 const Util = require("../src/util");
 const https = require("https");
 const fetch = require("node-fetch");
-const { timeStamp } = require("console");
 const PROJECTID = "campus-density";
 const db = new Firestore({
   projectId: PROJECTID,
@@ -75,8 +74,11 @@ async function getCurrentMeal(slug) {
   return currMealObject.descr;
 }
 
-async function computeNewWaitline(diningHall, day, currMeal) {
+// diningHall is the slug in the earteries json. Rename vars later?
+async function computeNewWaitline(diningHall, day) {
   // Fetch the current line length
+  const currMeal = getCurrentMeal(diningHall);
+
   const lineLength = (
     await db.collection("waittimes").doc("lineLengths").get()
   ).data()[diningHall];
