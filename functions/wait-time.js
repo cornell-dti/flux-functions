@@ -30,12 +30,50 @@ const Firestore = require("@google-cloud/firestore");
 require("dotenv").config({ path: "../.env" });
 const Util = require("../src/util");
 const https = require("https");
-const { service } = require("firebase-functions/lib/providers/analytics");
+const fetch = require("node-fetch");
+const { timeStamp } = require("console");
 const PROJECTID = "campus-density";
 const db = new Firestore({
   projectId: PROJECTID,
   timestampsInSnapshots: true,
 });
+
+async function getCurrentMeal(slug) {
+  // fetch all dining data
+  let menuData = {};
+  await fetch("https://now.dining.cornell.edu/api/1.0/dining/eateries.json")
+    .then((res) => res.json())
+    .then((menus) => (menuData = menus));
+
+  const eateryData = menuData.data.eateries.find(
+    (eatery) => eatery.slug === slug
+  );
+  if (!eateryData) throw new Error("Could not find data for the given eatery");
+
+  // fetch today's data
+  const currTime = new Date();
+  const formattedDate = `${currTime.getFullYear()}-${
+    currTime.getMonth() + 1
+  }-${currTime.getDate()}`;
+  const operatingHours = eateryData.operatingHours;
+  const todaysData = operatingHours.find((obj) => obj.date === formattedDate);
+
+  if (!todaysData) throw new Error("Could not fetch today's data");
+
+  // COnvert timestamp to seconds
+  const timestamp = currTime.getTime() / 1000;
+
+  // find current meal
+  const currMealObject = todaysData.events.find((mealObject) => {
+    return (
+      timestamp >= mealObject.startTimestamp &&
+      timestamp < mealObject.endTimestamp
+    );
+  });
+
+  if (!currMealObject) throw new Error("Dining hall closed");
+  return currMealObject.descr;
+}
 
 async function computeNewWaitline(diningHall, day, currMeal) {
   // Fetch the current line length
@@ -62,14 +100,15 @@ async function computeNewWaitline(diningHall, day, currMeal) {
   // servingTimeForOnePerson is a placeholder value.
   // Compute the service rate, which we define as the number of people who can
   // be served in 5 minutes
-  const servingTimeForOnePerson = (
-    await db
-      .collection("waittimes")
-      .doc("serviceRates")
-      .collection(diningHall)
-      .doc(day)
-      .get()
-  ).data()[currMeal];
+  const servingTimeForOnePerson =
+    (
+      await db
+        .collection("waittimes")
+        .doc("serviceRates")
+        .collection(diningHall)
+        .doc(day)
+        .get()
+    ).data()[currMeal] || 75 / 60; // We got this data from cornell dining
   const serviceRate = 5 / servingTimeForOnePerson;
   console.log(`Serving time for one person: ${servingTimeForOnePerson}`);
   console.log(`Service rate: ${serviceRate}`);
@@ -100,4 +139,12 @@ async function computeNewWaitline(diningHall, day, currMeal) {
     .update({ [diningHall]: newWaitlineLength });
 }
 
-computeNewWaitline("Carl Becker House", "monday", "lunch");
+function estimateWaittime(fnData) {
+  diningHalls.foreach((hall) => {
+    // find the current meal for hall based on time
+  });
+}
+
+exports.handler = estimateWaittime;
+//computeNewWaitline("Carl Becker House", "monday", "lunch");
+getCurrentMeal("Becker-House-Dining");
