@@ -37,6 +37,29 @@ const db = new Firestore({
   timestampsInSnapshots: true,
 });
 
+const slugs = [
+  "104-West",
+  "Becker-House-Dining",
+  "Cook-House-Dining",
+  "Keeton-House-Dining",
+  "North-Star",
+  "Okenshields",
+  "Jansens-Dining",
+  "Risley-Dining",
+  "RPCC-Marketplace",
+  "Rose-House-Dining",
+];
+
+const days = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 async function getCurrentMeal(slug) {
   // fetch all dining data
   let menuData = {};
@@ -142,11 +165,10 @@ async function computeNewWaitline(diningHall, day) {
 }
 
 function estimateWaittime(fnData) {
-  diningHalls.foreach((hall) => {
-    // find the current meal for hall based on time
-  });
+  const day = days[new Date().getDay()];
+  return Promise.all(slugs.map((slug) => computeNewWaitline(slug, day)));
 }
 
 exports.handler = estimateWaittime;
-//computeNewWaitline("Carl Becker House", "monday", "lunch");
-getCurrentMeal("Becker-House-Dining");
+// computeNewWaitline("Carl Becker House", "monday", "lunch");
+// getCurrentMeal("Becker-House-Dining");
