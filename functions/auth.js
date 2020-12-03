@@ -89,5 +89,3 @@ exports.handler = function authv1(req, res) {
     res.status(401).send("Unable to authenticate api key.");
   }
 };
-
-module.exports = { firebaseDB };

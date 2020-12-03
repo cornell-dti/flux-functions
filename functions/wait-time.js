@@ -31,11 +31,14 @@ require("dotenv").config({ path: "../.env" });
 const Util = require("../src/util");
 const https = require("https");
 const fetch = require("node-fetch");
-const PROJECTID = "campus-density";
-const db = new Firestore({
-  projectId: PROJECTID,
-  timestampsInSnapshots: true,
+const admin = require("firebase-admin");
+
+admin.initializeApp({
+  credential: admin.credential.cert(
+    JSON.parse(process.env.FIREBASE_CREDENTIALS)
+  ),
 });
+const db = admin.firestore();
 
 const slugs = [
   "104-West",
@@ -100,12 +103,12 @@ async function getCurrentMeal(slug) {
 // diningHall is the slug in the earteries json. Rename vars later?
 async function computeNewWaitline(diningHall, day) {
   // Fetch the current line length
-  const currMeal = getCurrentMeal(diningHall);
+  // const currMeal = getCurrentMeal(diningHall);
 
   const lineLength = (
     await db.collection("waittimes").doc("lineLengths").get()
   ).data()[diningHall];
-  console.log("The current line length of " + diningHall + " is " + lineLength);
+  // console.log("The current line length of " + diningHall + " is " + lineLength);
 
   // Fetch swipe data fro the last 5 minutes
   const { API_ENDPOINT, API_PATH, API_AUTHORIZATION, API_KEY } = process.env;
@@ -120,48 +123,43 @@ async function computeNewWaitline(diningHall, day) {
   };
 
   const swipeData = await Util.getJSON(data, https);
-  console.log(swipeData);
+  // console.log(swipeData);
 
   // servingTimeForOnePerson is a placeholder value.
   // Compute the service rate, which we define as the number of people who can
   // be served in 5 minutes
   const servingTimeForOnePerson =
-    (
-      await db
-        .collection("waittimes")
-        .doc("serviceRates")
-        .collection(diningHall)
-        .doc(day)
-        .get()
-    ).data()[currMeal] || 75 / 60; // We got this data from cornell dining
+    (await db.collection("waittimes").doc("serviceRates").get()).data()[
+      "serviceRate_HC"
+    ] || 75 / 60; // We got this data from cornell dining
   const serviceRate = 5 / servingTimeForOnePerson;
-  console.log(`Serving time for one person: ${servingTimeForOnePerson}`);
-  console.log(`Service rate: ${serviceRate}`);
+  // console.log(`Serving time for one person: ${servingTimeForOnePerson}`);
+  // console.log(`Service rate: ${serviceRate}`);
 
   const swipeDataForEatery =
     (swipeData.UNITS.find((element) => element.UNIT_NAME === diningHall) || {})
       .CROWD_COUNT || 0;
 
-  console.log(`swipeDataForEatery: ${swipeDataForEatery}`);
+  // console.log(`swipeDataForEatery: ${swipeDataForEatery}`);
   const newWaitlineLength = Math.max(
     lineLength + swipeDataForEatery - serviceRate,
     0
   );
   const ewt = servingTimeForOnePerson * newWaitlineLength;
-  console.log("The new waitline: " + newWaitlineLength);
-  console.log("The estimated wait time is: " + ewt);
+  // console.log("The new waitline: " + newWaitlineLength);
+  // console.log("The estimated wait time is: " + ewt);
 
   // update the estimated waittime field on firebase
   await db
     .collection("waittimes")
     .doc("waittimes")
-    .update({ [diningHall]: ewt });
+    .update({ [diningHall]: ewt, timestamp: Date.now() });
 
   // update the waitline length field
   await db
     .collection("waittimes")
     .doc("lineLengths")
-    .update({ [diningHall]: newWaitlineLength });
+    .update({ [diningHall]: newWaitlineLength, timestamp: Date.now() });
 }
 
 function estimateWaittime(fnData) {
@@ -169,6 +167,5 @@ function estimateWaittime(fnData) {
   return Promise.all(slugs.map((slug) => computeNewWaitline(slug, day)));
 }
 
+// computeNewWaitline("Becker-House-Dining", "monday");
 exports.handler = estimateWaittime;
-// computeNewWaitline("Carl Becker House", "monday", "lunch");
-// getCurrentMeal("Becker-House-Dining");
