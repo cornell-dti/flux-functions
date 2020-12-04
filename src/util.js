@@ -16,7 +16,7 @@
  */
 
 exports.strip = function strip(str) {
-  return str.replace(/\W/g, "");
+  return str.replace(/\W/g, '');
 };
 
 let httpsLib = null;
@@ -24,7 +24,7 @@ let httpsLib = null;
 function getHTTPSLib() {
   if (httpsLib == null) {
     // eslint-disable-next-line global-require
-    httpsLib = require("https");
+    httpsLib = require('https');
   }
 
   return httpsLib;
@@ -32,19 +32,19 @@ function getHTTPSLib() {
 
 exports.getJSON = function getJSON(data, https = getHTTPSLib()) {
   return new Promise((resolve, reject) => {
-    const request = https.get(data, (result) => {
-      let body = "";
+    const request = https.get(data, result => {
+      let body = '';
 
-      result.on("data", (chunk) => {
+      result.on('data', chunk => {
         body += chunk;
       });
 
-      result.on("end", () => {
+      result.on('end', () => {
         const jsdata = JSON.parse(body);
         resolve(jsdata);
       });
     });
-    request.on("error", (e) => {
+    request.on('error', e => {
       reject(e);
     });
   });

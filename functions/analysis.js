@@ -298,5 +298,3 @@ function analyseData() {
 exports.handler = function analyse(event, callback) {
   return analyseData();
 };
-
-analyseData();
