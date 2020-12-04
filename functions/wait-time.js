@@ -15,7 +15,10 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* eslint-disable camelcase */
+/**
+ * Command to deploy this function
+ * gcloud functions deploy waitTime --trigger-topic="WAIT_TIME_UPDATE" --env-vars-file .env.yaml
+ */
 
 /**
  * 0. Initialize global line length counter [This will be reset between meals, or when dining hall closes]
@@ -26,89 +29,75 @@
  * 3. waitline length = max(line length + newest arrival rate - service rate, 0). (Execute very 5 minutes) [update length]
  * 4. Waittime = waitline length * time for one person
  */
-const Firestore = require("@google-cloud/firestore");
-require("dotenv").config({ path: "../.env" });
-const Util = require("../src/util");
-const https = require("https");
-const fetch = require("node-fetch");
-const admin = require("firebase-admin");
+const https = require('https');
+const fetch = require('node-fetch');
+const admin = require('firebase-admin');
 
-const serviceAccount = {
-  type: "service_account",
-  project_id: "campus-density",
-  private_key_id: process.env.PRIVATE_KEY_ID,
-  private_key: process.env.PRIVATE_KEY,
-  client_email:
-    "firebase-adminsdk-inv51@campus-density.iam.gserviceaccount.com",
-  client_id: "115352834756945054444",
-  auth_uri: "https://accounts.google.com/o/oauth2/auth",
-  token_uri: "https://oauth2.googleapis.com/token",
-  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-  client_x509_cert_url:
-    "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-inv51%40campus-density.iam.gserviceaccount.com",
-};
+const Util = require('../src/util');
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(serviceAccount)
 });
+
 const db = admin.firestore();
 
 const slugs = [
-  "104-West",
-  "Becker-House-Dining",
-  "Cook-House-Dining",
-  "Keeton-House-Dining",
-  "North-Star",
-  "Okenshields",
-  "Jansens-Dining",
-  "Risley-Dining",
-  "RPCC-Marketplace",
-  "Rose-House-Dining",
+  '104-West',
+  'Becker-House-Dining',
+  'Cook-House-Dining',
+  'Keeton-House-Dining',
+  'North-Star',
+  'Okenshields',
+  'Jansens-Dining',
+  'Risley-Dining',
+  'RPCC-Marketplace',
+  'Rose-House-Dining'
 ];
 
 const days = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday'
 ];
 
 async function getCurrentMeal(slug) {
   // fetch all dining data
   let menuData = {};
-  await fetch("https://now.dining.cornell.edu/api/1.0/dining/eateries.json")
-    .then((res) => res.json())
-    .then((menus) => (menuData = menus));
+  await fetch('https://now.dining.cornell.edu/api/1.0/dining/eateries.json')
+    .then(res => res.json())
+    .then(menus => { menuData = menus; });
 
   const eateryData = menuData.data.eateries.find(
-    (eatery) => eatery.slug === slug
+    eatery => eatery.slug === slug
   );
-  if (!eateryData) throw new Error("Could not find data for the given eatery");
+  if (!eateryData) throw new Error('Could not find data for the given eatery');
 
   // fetch today's data
   const currTime = new Date();
   const formattedDate = `${currTime.getFullYear()}-${
     currTime.getMonth() + 1
   }-${currTime.getDate()}`;
-  const operatingHours = eateryData.operatingHours;
-  const todaysData = operatingHours.find((obj) => obj.date === formattedDate);
+  const { operatingHours } = eateryData;
+  const todaysData = operatingHours.find(obj => obj.date === formattedDate);
 
-  if (!todaysData) throw new Error("Could not fetch today's data");
+  if (!todaysData) throw new Error('Could not fetch today\'s data');
 
-  // COnvert timestamp to seconds
+  // Convert timestamp to seconds
   const timestamp = currTime.getTime() / 1000;
 
   // find current meal
-  const currMealObject = todaysData.events.find((mealObject) => {
-    return (
-      timestamp >= mealObject.startTimestamp &&
-      timestamp < mealObject.endTimestamp
-    );
-  });
+  const currMealObject = todaysData.events.find(
+    mealObject => timestamp >= mealObject.startTimestamp
+      && timestamp < mealObject.endTimestamp
+  );
 
-  if (!currMealObject) throw new Error("Dining hall closed");
+  if (!currMealObject) throw new Error('Dining hall closed');
   return currMealObject.descr;
 }
 
@@ -118,20 +107,22 @@ async function computeNewWaitline(diningHall, day) {
   // const currMeal = getCurrentMeal(diningHall);
 
   const lineLength = (
-    await db.collection("waittimes").doc("lineLengths").get()
+    await db.collection('waittimes').doc('lineLengths').get()
   ).data()[diningHall];
   // console.log("The current line length of " + diningHall + " is " + lineLength);
 
   // Fetch swipe data fro the last 5 minutes
-  const { API_ENDPOINT, API_PATH, API_AUTHORIZATION, API_KEY } = process.env;
+  const {
+    API_ENDPOINT, API_PATH, API_AUTHORIZATION, API_KEY
+  } = process.env;
 
   const data = {
     hostname: API_ENDPOINT,
     path: API_PATH,
     headers: {
       Authorization: API_AUTHORIZATION,
-      "x-api-key": API_KEY,
-    },
+      'x-api-key': API_KEY
+    }
   };
 
   const swipeData = await Util.getJSON(data, https);
@@ -140,17 +131,14 @@ async function computeNewWaitline(diningHall, day) {
   // servingTimeForOnePerson is a placeholder value.
   // Compute the service rate, which we define as the number of people who can
   // be served in 5 minutes
-  const servingTimeForOnePerson =
-    (await db.collection("waittimes").doc("serviceRates").get()).data()[
-      "serviceRate_HC"
-    ] || 75 / 60; // We got this data from cornell dining
+  const servingTimeForOnePerson = (await db.collection('waittimes').doc('serviceRates').get()).data()
+    .serviceRate_HC || 75 / 60; // We got this data from cornell dining
   const serviceRate = 5 / servingTimeForOnePerson;
   // console.log(`Serving time for one person: ${servingTimeForOnePerson}`);
   // console.log(`Service rate: ${serviceRate}`);
 
-  const swipeDataForEatery =
-    (swipeData.UNITS.find((element) => element.UNIT_NAME === diningHall) || {})
-      .CROWD_COUNT || 0;
+  const swipeDataForEatery = (swipeData.UNITS.find(element => element.UNIT_NAME === diningHall) || {})
+    .CROWD_COUNT || 0;
 
   // console.log(`swipeDataForEatery: ${swipeDataForEatery}`);
   const newWaitlineLength = Math.max(
@@ -163,21 +151,21 @@ async function computeNewWaitline(diningHall, day) {
 
   // update the estimated waittime field on firebase
   await db
-    .collection("waittimes")
-    .doc("waittimes")
+    .collection('waittimes')
+    .doc('waittimes')
     .update({ [diningHall]: ewt, timestamp: Date.now() });
 
   // update the waitline length field
   await db
-    .collection("waittimes")
-    .doc("lineLengths")
+    .collection('waittimes')
+    .doc('lineLengths')
     .update({ [diningHall]: newWaitlineLength, timestamp: Date.now() });
 }
 
-function estimateWaittime(fnData) {
+function waitTime(fnData) {
   const day = days[new Date().getDay()];
-  return Promise.all(slugs.map((slug) => computeNewWaitline(slug, day)));
+  return Promise.all(slugs.map(slug => computeNewWaitline(slug, day)));
 }
 
 // computeNewWaitline("Becker-House-Dining", "monday");
-exports.handler = estimateWaittime;
+exports.handler = waitTime;
