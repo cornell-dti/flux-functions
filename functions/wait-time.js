@@ -66,6 +66,30 @@ const days = [
   'Saturday'
 ];
 
+// function to calculate how much to weight user feedback based on the number 
+// of user feedbacks given, according to a ln curve maxing out at 30%
+// Right now, the function is quite simple - weight(x) = 0.15ln(x). The 
+// parameters can be tweaked later, and a sigmoid curve could also be used.
+function calculateWeight(numFeedback) {
+  const maxWeight = 0.3;
+  const weight = numFeedback ? 0.15 * Math.log(numFeedback) : 0;
+  return Math.min(maxWeight, weight);
+}
+
+async function getFeedback(diningHall, day) {
+  const hour = new Date().getHours().toString();
+  const feedbackData =
+    await db.collection('feedbackData').doc(diningHall).collection(day).doc(hour).collection('modelPrediction').get();
+  var totalCount = feedbackData.docs.reduce(function (accumulator, doc) {
+    return accumulator + doc.data()['count'];
+  }, 0);
+  var totalFeedback = feedbackData.docs.reduce(function (accumulator, doc) {
+    return accumulator + doc.data()['count'] * doc.data()['observedWait'];
+  }, 0);
+  var avgFeedback = totalCount ? totalFeedback / totalCount : 0;
+  return { feedback: avgFeedback, weight: calculateWeight(totalCount) };
+}
+
 async function getCurrentMeal(slug) {
   // fetch all dining data
   let menuData = {};
@@ -80,9 +104,8 @@ async function getCurrentMeal(slug) {
 
   // fetch today's data
   const currTime = new Date();
-  const formattedDate = `${currTime.getFullYear()}-${
-    currTime.getMonth() + 1
-  }-${currTime.getDate()}`;
+  const formattedDate = `${currTime.getFullYear()}-${currTime.getMonth() + 1
+    }-${currTime.getDate()}`;
   const { operatingHours } = eateryData;
   const todaysData = operatingHours.find(obj => obj.date === formattedDate);
 
@@ -149,11 +172,17 @@ async function computeNewWaitline(diningHall, day) {
   // console.log("The new waitline: " + newWaitlineLength);
   // console.log("The estimated wait time is: " + ewt);
 
+
+  // factoring in user feedback for that day/hour
+  const feedbackData = await getFeedback(diningHall, day);
+
+  const weightedWait = feedbackData.weight * feedbackData.feedback + (1 - feedbackData.weight) * ewt;
+
   // update the estimated waittime field on firebase
   await db
     .collection('waittimes')
     .doc('waittimes')
-    .update({ [diningHall]: ewt, timestamp: Date.now() });
+    .update({ [diningHall]: weightedWait, timestamp: Date.now() });
 
   // update the waitline length field
   await db
