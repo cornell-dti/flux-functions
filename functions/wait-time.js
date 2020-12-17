@@ -76,18 +76,14 @@ function calculateWeight(numFeedback) {
   return Math.min(maxWeight, weight);
 }
 
-async function getFeedback(diningHall, day) {
+async function getFeedback(diningHall, day, prediction) {
   const hour = new Date().getHours().toString();
   const feedbackData =
-    await db.collection('feedbackData').doc(diningHall).collection(day).doc(hour).collection('modelPrediction').get();
-  var totalCount = feedbackData.docs.reduce(function (accumulator, doc) {
-    return accumulator + doc.data()['count'];
-  }, 0);
-  var totalFeedback = feedbackData.docs.reduce(function (accumulator, doc) {
-    return accumulator + doc.data()['count'] * doc.data()['observedWait'];
-  }, 0);
-  var avgFeedback = totalCount ? totalFeedback / totalCount : 0;
-  return { feedback: avgFeedback, weight: calculateWeight(totalCount) };
+    await db.collection('feedbackData').doc(diningHall).collection(day).doc(hour).collection('modelPrediction').doc(prediction.toString()).get();
+  if (feedbackData.exists) {
+    return { feedback: feedbackData.data()['observedWait'], weight: calculateWeight(feedbackData.data()['count']) };
+  }
+  else return { feedback: 0, weight: 0 };
 }
 
 async function getCurrentMeal(slug) {
@@ -174,7 +170,7 @@ async function computeNewWaitline(diningHall, day) {
 
 
   // factoring in user feedback for that day/hour
-  const feedbackData = await getFeedback(diningHall, day);
+  const feedbackData = await getFeedback(diningHall, day, ewt);
 
   const weightedWait = feedbackData.weight * feedbackData.feedback + (1 - feedbackData.weight) * ewt;
 
