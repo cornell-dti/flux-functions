@@ -66,9 +66,9 @@ const days = [
   'Saturday'
 ];
 
-// function to calculate how much to weight user feedback based on the number 
+// function to calculate how much to weight user feedback based on the number
 // of user feedbacks given, according to a ln curve maxing out at 30%
-// Right now, the function is quite simple - weight(x) = 0.15ln(x). The 
+// Right now, the function is quite simple - weight(x) = 0.15ln(x). The
 // parameters can be tweaked later, and a sigmoid curve could also be used.
 function calculateWeight(numFeedback) {
   const maxWeight = 0.3;
@@ -78,9 +78,11 @@ function calculateWeight(numFeedback) {
 
 async function getFeedback(diningHall, day, prediction) {
   const hour = new Date().getHours().toString();
-  const feedbackData = await db.collection('feedbackData').doc(diningHall).collection(day).doc(hour).collection('modelPrediction').doc(prediction.toString()).get();
+  const feedbackData = await db
+    .collection('feedbackData').doc(diningHall).collection(day).doc(hour)
+    .collection('modelPrediction').doc(prediction.toString()).get();
   if (feedbackData.exists) {
-    return { feedback: feedbackData.data()['observedWait'], weight: calculateWeight(feedbackData.data()['count']) };
+    return { feedback: feedbackData.data().observedWait, weight: calculateWeight(feedbackData.data().count) };
   }
   return { feedback: 0, weight: 0 };
 }
