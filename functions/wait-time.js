@@ -78,12 +78,11 @@ function calculateWeight(numFeedback) {
 
 async function getFeedback(diningHall, day, prediction) {
   const hour = new Date().getHours().toString();
-  const feedbackData =
-    await db.collection('feedbackData').doc(diningHall).collection(day).doc(hour).collection('modelPrediction').doc(prediction.toString()).get();
+  const feedbackData = await db.collection('feedbackData').doc(diningHall).collection(day).doc(hour).collection('modelPrediction').doc(prediction.toString()).get();
   if (feedbackData.exists) {
     return { feedback: feedbackData.data()['observedWait'], weight: calculateWeight(feedbackData.data()['count']) };
   }
-  else return { feedback: 0, weight: 0 };
+  return { feedback: 0, weight: 0 };
 }
 
 async function getCurrentMeal(slug) {
