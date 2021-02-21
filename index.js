@@ -20,9 +20,11 @@ const Analysis = require('./functions/analysis');
 const Auth = require('./functions/auth');
 const UpdateHours = require('./functions/update-hours');
 const DiningData = require('./functions/dining');
+const WaitTime = require('./functions/wait-time');
 
 exports.updateData = DataStorage.handler;
 exports.analyse = Analysis.handler;
 exports.authv1 = Auth.handler;
 exports.updateHoursDev = UpdateHours.handler;
 exports.diningData = DiningData.handler;
+exports.waitTime = WaitTime.handler;

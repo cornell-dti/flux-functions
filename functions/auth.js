@@ -27,7 +27,11 @@ const UUID_VALIDATE_IOS = /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A
 const Util = require('../src/util');
 
 exports.handler = function authv1(req, res) {
-  if (!req.headers['x-api-key'] || !req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+  if (
+    !req.headers['x-api-key']
+    || !req.headers.authorization
+    || !req.headers.authorization.startsWith('Bearer ')
+  ) {
     console.log(`Malformed header for authv1: ${req.headers['x-api-key']}`);
     res.status(403).send('Unauthorized');
     return;

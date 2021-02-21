@@ -43,20 +43,30 @@ function analyseData() {
   mom.seconds(0);
   mom.milliseconds(0);
 
-  const countsQuery = datastore.createQuery('counts').filter('timestamp', '>=', current.valueOf());
+  const countsQuery = datastore
+    .createQuery('counts')
+    .filter('timestamp', '>=', current.valueOf());
 
   return new Promise((resolve, reject) => {
     console.log('Retrieving facility metadata.');
     const query = datastore.createQuery('facility_metadata', 'facility_info');
     datastore.runQuery(query, (err, entities) => {
-      console.log(`Found metadata for the following facilities: ${JSON.stringify(entities.map(entity => entity.display_name))}`);
+      console.log(
+        `Found metadata for the following facilities: ${JSON.stringify(
+          entities.map(entity => entity.display_name)
+        )}`
+      );
       if (err) {
         reject(err);
       } else {
         resolve(
           entities.map(entity => {
             const {
-              avg_stay_length_minutes, display_name, peak_flow, stickiness, unit_name
+              avg_stay_length_minutes,
+              display_name,
+              peak_flow,
+              stickiness,
+              unit_name
             } = entity;
 
             console.log(
@@ -89,6 +99,7 @@ function analyseData() {
         counts.forEach(count => {
           mapping[`${count.timestamp}`] = count;
         });
+        console.log(mapping);
         resolve([entities, mapping]);
       }
     });
@@ -97,21 +108,33 @@ function analyseData() {
       entity => new Promise((res, rej) => {
         const strippedUnitName = Util.strip(entity.unit_name);
 
-        analysisLog(strippedUnitName, `Analysing: ${entity.display_name}`);
+        analysisLog(
+          strippedUnitName,
+          `Analysing: ${entity.display_name}`
+        );
 
         const densityKey = datastore.key({
           namespace: 'density',
           path: ['density_info', strippedUnitName]
         });
-        analysisLog(strippedUnitName, `Retrieving density data for: ${entity.display_name}`);
+        analysisLog(
+          strippedUnitName,
+          `Retrieving density data for: ${entity.display_name}`
+        );
         datastore.get(densityKey, (error, densityResult) => {
           if (error) {
             rej(error);
             return;
           }
 
-          analysisLog(strippedUnitName, `Density data found for: ${entity.display_name}`);
-          analysisLog(strippedUnitName, `Previous Analysis Data: ${JSON.stringify(densityResult)}`);
+          analysisLog(
+            strippedUnitName,
+            `Density data found for: ${entity.display_name}`
+          );
+          analysisLog(
+            strippedUnitName,
+            `Previous Analysis Data: ${JSON.stringify(densityResult)}`
+          );
 
           let populi = 0;
 
@@ -135,33 +158,61 @@ function analyseData() {
 
           let entrants = 0;
 
-          const result = (counts[`${mom.valueOf()}`] || {})[strippedUnitName];
+          const result = (counts[`${mom.valueOf()}`] || {})[
+            strippedUnitName
+          ];
 
           if (counts) {
             if (lastRun && lastRun !== -1) {
               if (lastRun === mom.valueOf()) {
-                analysisLog(strippedUnitName, `${entity.display_name} has already been updated.`);
+                analysisLog(
+                  strippedUnitName,
+                  `${entity.display_name} has already been updated.`
+                );
                 res(`${entity.display_name} has already been updated.`);
                 return;
               }
 
-              const minDiff = moment.duration(moment(lastRun).diff(comparison)).asMinutes();
-              analysisLog(strippedUnitName, `Found ${minDiff} duration since last run.`);
+              const minDiff = moment
+                .duration(moment(lastRun).diff(comparison))
+                .asMinutes();
+              analysisLog(
+                strippedUnitName,
+                `Found ${minDiff} duration since last run.`
+              );
               const past = -Math.round(minDiff / 5);
-              analysisLog(strippedUnitName, `This means ${past} iterations will be done.`);
+              analysisLog(
+                strippedUnitName,
+                `This means ${past} iterations will be done.`
+              );
 
               for (let i = past; i > 0; i -= 1) {
-                const mom2 = moment(mom).subtract(5 * Math.round(entity.avg_stay_length_minutes / 5) + 5 * (past - 1), 'minutes');
-                const x = (counts[`${mom2.valueOf()}`] || {})[strippedUnitName] || 0;
-                analysisLog(strippedUnitName, `Found ${x} people from ${mom2.toString()} - ${mom2.valueOf()}.`);
+                const mom2 = moment(mom).subtract(
+                  5 * Math.round(entity.avg_stay_length_minutes / 5)
+                          + 5 * (past - 1),
+                  'minutes'
+                );
+                const x = (counts[`${mom2.valueOf()}`] || {})[strippedUnitName]
+                        || 0;
+                analysisLog(
+                  strippedUnitName,
+                  `Found ${x} people from ${mom2.toString()} - ${mom2.valueOf()}.`
+                );
                 if (typeof x === 'number') {
                   previousEntrants += x;
                 }
               }
             } else {
-              const mom2 = moment(mom).subtract(5 * Math.round(entity.avg_stay_length_minutes / 5), 'minutes');
-              const x = (counts[`${mom2.valueOf()}`] || {})[strippedUnitName] || 0;
-              analysisLog(strippedUnitName, `Found (no multiple analysis) ${x} people from ${mom2.toString()} - ${mom2.valueOf()}.`);
+              const mom2 = moment(mom).subtract(
+                5 * Math.round(entity.avg_stay_length_minutes / 5),
+                'minutes'
+              );
+              const x = (counts[`${mom2.valueOf()}`] || {})[strippedUnitName]
+                      || 0;
+              analysisLog(
+                strippedUnitName,
+                `Found (no multiple analysis) ${x} people from ${mom2.toString()} - ${mom2.valueOf()}.`
+              );
               if (typeof x === 'number') {
                 previousEntrants = x;
               }
@@ -169,21 +220,38 @@ function analyseData() {
 
             entrants = result || 0;
 
-            analysisLog(strippedUnitName, `Found ${entrants} from ${mom.toString()} - ${mom.valueOf()} in ${JSON.stringify(result)}.`);
+            analysisLog(
+              strippedUnitName,
+              `Found ${entrants} from ${mom.toString()} - ${mom.valueOf()} in ${JSON.stringify(
+                result
+              )}.`
+            );
           }
 
           analysisLog(strippedUnitName, `Calculating density...`);
           analysisLog(strippedUnitName, `Current population: ${populi}`);
-          const stickiness = Math.min((entity.stickiness || 100) / 100, 1);
+          const stickiness = Math.min(
+            (entity.stickiness || 100) / 100,
+            1
+          );
           analysisLog(strippedUnitName, `Stickiness: ${stickiness}`);
           const additions = Math.ceil(stickiness * entrants);
-          analysisLog(strippedUnitName, `Est. additions: ${additions} --- ${entrants}`);
+          analysisLog(
+            strippedUnitName,
+            `Est. additions: ${additions} --- ${entrants}`
+          );
           populi += additions;
           const max_capacity = entity.max_capacity || 100;
           const removals = Math.ceil(stickiness * previousEntrants);
-          analysisLog(strippedUnitName, `Previous entrants: ${previousEntrants}  --- ${removals}`);
+          analysisLog(
+            strippedUnitName,
+            `Previous entrants: ${previousEntrants}  --- ${removals}`
+          );
           populi -= removals;
-          analysisLog(strippedUnitName, `Maximum capacity: ${max_capacity}`);
+          analysisLog(
+            strippedUnitName,
+            `Maximum capacity: ${max_capacity}`
+          );
           // TODO Remove upper bounds check?
           populi = Math.max(0, Math.min(max_capacity, populi));
 
@@ -215,7 +283,9 @@ function analyseData() {
               if (err) {
                 rej(err);
               } else {
-                res(`${entity.display_name} has approx. ${populi} individuals.`);
+                res(
+                  `${entity.display_name} has approx. ${populi} individuals.`
+                );
               }
             }
           );
