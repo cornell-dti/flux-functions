@@ -79,7 +79,8 @@ function calculateWeight(numFeedback) {
 async function getFeedback(diningHall, day, prediction) {
   const hour = new Date().getHours().toString();
   const feedbackData = await db
-    .collection('feedbackData').doc(diningHall).collection(day).doc(hour).get();
+    .collection('feedbackData').doc(diningHall).collection(day).doc(hour)
+    .get();
   if (feedbackData.exists) {
     return { feedback: feedbackData.data().observedWait, weight: calculateWeight(feedbackData.data().count) };
   }
@@ -101,7 +102,7 @@ async function getCurrentMeal(slug) {
   // fetch today's data
   const currTime = new Date();
   const formattedDate = `${currTime.getFullYear()}-${currTime.getMonth() + 1
-    }-${currTime.getDate()}`;
+  }-${currTime.getDate()}`;
   const { operatingHours } = eateryData;
   const todaysData = operatingHours.find(obj => obj.date === formattedDate);
 
