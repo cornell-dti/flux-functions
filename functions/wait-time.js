@@ -25,14 +25,14 @@
  * 1. Want to fetch arrival data ~ swipe-in data in the last 5 minutes
  * 2. Fetch the service rate for the dining hall at given time
  *      Def service rate := # people who CAN get served every 5 minutes
- *      2.1 Find serving time for one person, 5 / serving time for one person = service rate
+ *      2.1 Find serving time for one person, 5 / serving time for one person (= waittimes/serviceRates/serviceRate_HC) = service rate
  * 3. waitline length = max(line length + newest arrival rate - service rate, 0). (Execute very 5 minutes) [update length]
  * 4. Waittime = waitline length * time for one person
  */
 const https = require('https');
 const fetch = require('node-fetch');
 const admin = require('firebase-admin');
-
+require('dotenv').config({ path: './.env' });
 const Util = require('../src/util');
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
@@ -44,16 +44,18 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const slugs = [
-  '104-West',
-  'Becker-House-Dining',
-  'Cook-House-Dining',
-  'Keeton-House-Dining',
-  'North-Star',
+  'Kosher',
+  'Carl Becker House',
+  'Alice Cook House',
+  'Keeton House',
+  'North Star Marketplace',
   'Okenshields',
-  'Jansens-Dining',
-  'Risley-Dining',
-  'RPCC-Marketplace',
-  'Rose-House-Dining'
+  'Jansens at Bethe House',
+  'Risley',
+  'RPME',
+  'Rose Dining Hall',
+  'Olin Libe Cafe',
+  'Cafe Jennie'
 ];
 
 const days = [
@@ -79,9 +81,16 @@ function calculateWeight(numFeedback) {
 async function getFeedback(diningHall, day, prediction) {
   const hour = new Date().getHours().toString();
   const feedbackData = await db
-    .collection('feedbackData').doc(diningHall).collection(day).doc(hour).get();
+    .collection('feedbackData')
+    .doc(diningHall)
+    .collection(day)
+    .doc(hour)
+    .get();
   if (feedbackData.exists) {
-    return { feedback: feedbackData.data().observedWait, weight: calculateWeight(feedbackData.data().count) };
+    return {
+      feedback: feedbackData.data().observedWait,
+      weight: calculateWeight(feedbackData.data().count)
+    };
   }
   return { feedback: 0, weight: 0 };
 }
@@ -91,7 +100,9 @@ async function getCurrentMeal(slug) {
   let menuData = {};
   await fetch('https://now.dining.cornell.edu/api/1.0/dining/eateries.json')
     .then(res => res.json())
-    .then(menus => { menuData = menus; });
+    .then(menus => {
+      menuData = menus;
+    });
 
   const eateryData = menuData.data.eateries.find(
     eatery => eatery.slug === slug
@@ -100,8 +111,9 @@ async function getCurrentMeal(slug) {
 
   // fetch today's data
   const currTime = new Date();
-  const formattedDate = `${currTime.getFullYear()}-${currTime.getMonth() + 1
-    }-${currTime.getDate()}`;
+  const formattedDate = `${currTime.getFullYear()}-${
+    currTime.getMonth() + 1
+  }-${currTime.getDate()}`;
   const { operatingHours } = eateryData;
   const todaysData = operatingHours.find(obj => obj.date === formattedDate);
 
@@ -125,9 +137,9 @@ async function computeNewWaitline(diningHall, day) {
   // Fetch the current line length
   // const currMeal = getCurrentMeal(diningHall);
 
-  const lineLength = (
-    await db.collection('waittimes').doc('lineLengths').get()
-  ).data()[diningHall];
+  const lineLength = (await db.collection('waittimes').doc('lineLengths').get()).data()[
+    diningHall
+  ] || 0;
   // console.log("The current line length of " + diningHall + " is " + lineLength);
 
   // Fetch swipe data fro the last 5 minutes
@@ -145,8 +157,7 @@ async function computeNewWaitline(diningHall, day) {
   };
 
   const swipeData = await Util.getJSON(data, https);
-  // console.log(swipeData);
-
+  console.log(swipeData);
   // servingTimeForOnePerson is a placeholder value.
   // Compute the service rate, which we define as the number of people who can
   // be served in 5 minutes
@@ -168,11 +179,11 @@ async function computeNewWaitline(diningHall, day) {
   // console.log("The new waitline: " + newWaitlineLength);
   // console.log("The estimated wait time is: " + ewt);
 
-
   // factoring in user feedback for that day/hour
   const feedbackData = await getFeedback(diningHall, day, ewt);
 
-  const weightedWait = feedbackData.weight * feedbackData.feedback + (1 - feedbackData.weight) * ewt;
+  const weightedWait = feedbackData.weight * feedbackData.feedback
+    + (1 - feedbackData.weight) * ewt;
 
   // update the estimated waittime field on firebase
   await db
@@ -185,6 +196,18 @@ async function computeNewWaitline(diningHall, day) {
     .collection('waittimes')
     .doc('lineLengths')
     .update({ [diningHall]: newWaitlineLength, timestamp: Date.now() });
+
+  // Log Data for R&D
+  await db
+    .collection('waitTimesHistoryLogs')
+    .doc(diningHall)
+    .collection('data')
+    .doc(new Date().toString())
+    .set({
+      serviceRate,
+      swipeDataForEatery,
+      lineLength
+    });
 }
 
 function waitTime(fnData) {
@@ -192,5 +215,5 @@ function waitTime(fnData) {
   return Promise.all(slugs.map(slug => computeNewWaitline(slug, day)));
 }
 
-// computeNewWaitline("Becker-House-Dining", "monday");
+// computeNewWaitline("RPME", "monday");
 exports.handler = waitTime;
