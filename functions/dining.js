@@ -64,7 +64,7 @@ function insertData(data) {
         // TODO: Change it so its 'safer'. Right now, I'm assuming that the
         // first entry in eatery types is a Cafe because that's what it seems
         // to be by inspection.
-        const isDiningHall = eatery.eateryTypes[0].descr == 'Dining Room';
+        const isDiningHall = eatery.eateryTypes[0].descr === 'Dining Room';
         const weeksMenus = isDiningHall
           ? processDiningHalls(eatery.operatingHours)
           : processCafes(eatery.diningItems);
