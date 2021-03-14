@@ -32,7 +32,6 @@
 const https = require('https');
 const fetch = require('node-fetch');
 const admin = require('firebase-admin');
-require('dotenv').config({ path: './.env' });
 const Util = require('../src/util');
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
@@ -44,18 +43,18 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const slugs = [
-  'Kosher',
-  'Carl Becker House',
-  'Alice Cook House',
-  'Keeton House',
-  'North Star Marketplace',
-  'Okenshields',
-  'Jansens at Bethe House',
-  'Risley',
-  'RPME',
-  'Rose Dining Hall',
-  'Olin Libe Cafe',
-  'Cafe Jennie'
+  "Kosher",
+  "Carl Becker House",
+  "Alice Cook House",
+  "Keeton House",
+  "North Star Marketplace",
+  "Okenshields",
+  "Jansens at Bethe House",
+  "Risley",
+  "RPME",
+  "Rose Dining Hall",
+  "Olin Libe Cafe",
+  "Cafe Jennie",
 ];
 
 const days = [
@@ -111,8 +110,7 @@ async function getCurrentMeal(slug) {
 
   // fetch today's data
   const currTime = new Date();
-  const formattedDate = `${currTime.getFullYear()}-${
-    currTime.getMonth() + 1
+  const formattedDate = `${currTime.getFullYear()}-${currTime.getMonth() + 1
   }-${currTime.getDate()}`;
   const { operatingHours } = eateryData;
   const todaysData = operatingHours.find(obj => obj.date === formattedDate);
@@ -133,7 +131,8 @@ async function getCurrentMeal(slug) {
 }
 
 // diningHall is the slug in the earteries json. Rename vars later?
-async function computeNewWaitline(diningHall, day) {
+// numLines represents the number of queues in the dining hall
+async function computeNewWaitline(diningHall, day, numLines) {
   // Fetch the current line length
   // const currMeal = getCurrentMeal(diningHall);
 
@@ -159,10 +158,12 @@ async function computeNewWaitline(diningHall, day) {
   const swipeData = await Util.getJSON(data, https);
   console.log(swipeData);
   // servingTimeForOnePerson is a placeholder value.
+
+  const servingTimeForOnePerson = ((await db.collection('waittimes').doc('serviceRates').get()).data().serviceRate_HC
+    || 75 / 60) / numLines; // We got this data from cornell dining
+
   // Compute the service rate, which we define as the number of people who can
   // be served in 5 minutes
-  const servingTimeForOnePerson = (await db.collection('waittimes').doc('serviceRates').get()).data()
-    .serviceRate_HC || 75 / 60; // We got this data from cornell dining
   const serviceRate = 5 / servingTimeForOnePerson;
   // console.log(`Serving time for one person: ${servingTimeForOnePerson}`);
   // console.log(`Service rate: ${serviceRate}`);
@@ -210,9 +211,10 @@ async function computeNewWaitline(diningHall, day) {
     });
 }
 
-function waitTime(fnData) {
+async function waitTime(fnData) {
   const day = days[new Date().getDay()];
-  return Promise.all(slugs.map(slug => computeNewWaitline(slug, day)));
+  const numLines = (await db.collection('waittimes').doc('numLines').get()).data();
+  return Promise.all(slugs.map(slug => computeNewWaitline(slug, day, numLines.slug || 1)));
 }
 
 // computeNewWaitline("RPME", "monday");
