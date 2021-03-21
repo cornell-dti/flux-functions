@@ -103,8 +103,8 @@ function diningData(fnData) {
   } = process.env;
 
   const data = {
-    hostname: 'now.dining.cornell.edu',
-    path: '/api/1.0/dining/eateries.json',
+    hostname: API_ENDPOINT,
+    path: API_PATH,
     headers: {
       Authorization: API_AUTHORIZATION,
       'x-api-key': API_KEY
@@ -116,7 +116,5 @@ function diningData(fnData) {
     .then(() => 'Success')
     .catch(err => console.log(err));
 }
-
-diningData();
 
 exports.handler = diningData;
