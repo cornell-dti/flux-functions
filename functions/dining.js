@@ -99,16 +99,12 @@ function insertData(data) {
 
 function diningData(fnData) {
   const {
-    API_ENDPOINT, API_PATH, API_AUTHORIZATION, API_KEY
+    API_ENDPOINT, API_PATH
   } = process.env;
 
   const data = {
     hostname: API_ENDPOINT,
-    path: API_PATH,
-    headers: {
-      Authorization: API_AUTHORIZATION,
-      'x-api-key': API_KEY
-    }
+    path: API_PATH
   };
 
   return Util.getJSON(data, https)
