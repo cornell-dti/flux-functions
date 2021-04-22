@@ -17,6 +17,7 @@
 
 const https = require('https');
 const Datastore = require('@google-cloud/datastore');
+require('dotenv').config({ path: './.env' });
 
 const datastore = Datastore();
 const Util = require('../src/util');
@@ -63,7 +64,7 @@ function insertData(data) {
         // TODO: Change it so its 'safer'. Right now, I'm assuming that the
         // first entry in eatery types is a Cafe because that's what it seems
         // to be by inspection.
-        const isDiningHall = !!eatery.eateryTypes[0].descr === 'Cafe';
+        const isDiningHall = eatery.eateryTypes[0].descr === 'Dining Room';
         const weeksMenus = isDiningHall
           ? processDiningHalls(eatery.operatingHours)
           : processCafes(eatery.diningItems);
@@ -72,28 +73,24 @@ function insertData(data) {
           area: eatery.campusArea.descrshort,
           coordinates: eatery.coordinates
         };
-
-        console.log(weeksMenus);
         const key = datastore.key(['dining', `${eatery.slug}`]);
+        const menuUpload = {
+          key,
+          data: {
+            id: EATERYNAME_MAP[eatery.slug] || 'unknown',
+            type: isDiningHall ? 'dining-hall' : 'cafe',
+            weeksMenus,
+            location
+          }
+        };
         if (EATERYNAME_MAP[eatery.slug] !== null) {
-          datastore.upsert(
-            {
-              key,
-              data: {
-                id: EATERYNAME_MAP[eatery.slug] || 'unknown',
-                type: isDiningHall ? 'dining-hall' : 'cafe',
-                weeksMenus,
-                location
-              }
-            },
-            err => {
-              if (err) {
-                reject(err);
-                console.log(err);
-              }
-              resolve();
+          datastore.upsert(menuUpload, err => {
+            if (err) {
+              reject(err);
+              console.log(err);
             }
-          );
+            resolve();
+          });
         }
       })
     )
@@ -102,16 +99,12 @@ function insertData(data) {
 
 function diningData(fnData) {
   const {
-    API_ENDPOINT, API_PATH, API_AUTHORIZATION, API_KEY
+    API_ENDPOINT, API_PATH
   } = process.env;
 
   const data = {
     hostname: API_ENDPOINT,
-    path: API_PATH,
-    headers: {
-      Authorization: API_AUTHORIZATION,
-      'x-api-key': API_KEY
-    }
+    path: API_PATH
   };
 
   return Util.getJSON(data, https)
